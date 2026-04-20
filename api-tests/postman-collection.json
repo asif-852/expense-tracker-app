@@ -1,0 +1,950 @@
+{
+  "info": {
+    "_postman_id": "expense-tracker-auth-collection",
+    "name": "Expense Tracker API",
+    "description": "Full API validation collection for the Expense Tracker MERN app.\nCovers Iterations 0-3: Health, Registration, Login, and Protected Routes.\n\n**Setup:**\n1. Import this collection into Postman\n2. Select the 'Expense Tracker - Local' environment\n3. Make sure your backend is running on http://localhost:5000\n4. Run the collection in order (Collection Runner) or individually",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string",
+      "description": "Base URL for all API requests"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT token – auto-populated after Register or Login"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Health Check",
+      "item": [
+        {
+          "name": "GET / – Server Running",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains message field', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('message');",
+                  "});",
+                  "",
+                  "pm.test('Response time is below 500ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": [""]
+            },
+            "description": "Verify the Express server is running and responding."
+          },
+          "response": [
+            {
+              "name": "Server Running Example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:5000/",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "5000",
+                  "path": [""]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"message\": \"Expense Tracker API is running!\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Auth – Register",
+      "item": [
+        {
+          "name": "POST /auth/register – Valid (201)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Generate a unique username/email each run to avoid duplicate conflicts",
+                  "const ts = Date.now();",
+                  "pm.collectionVariables.set('testUsername', `testuser_${ts}`);",
+                  "pm.collectionVariables.set('testEmail',    `test_${ts}@example.com`);",
+                  "pm.collectionVariables.set('testPassword', 'TestPass123!');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response contains a token', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('token');",
+                  "    pm.expect(json.token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('Token is a valid JWT structure (3 segments)', function () {",
+                  "    const json  = pm.response.json();",
+                  "    const parts = json.token.split('.');",
+                  "    pm.expect(parts).to.have.lengthOf(3);",
+                  "});",
+                  "",
+                  "// Auto-save token for downstream requests",
+                  "const json = pm.response.json();",
+                  "if (json.token) {",
+                  "    pm.collectionVariables.set('authToken', json.token);",
+                  "    console.log('Token saved to collection variable: authToken');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{testUsername}}\",\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register a new user. Uses a timestamp-based username/email to ensure uniqueness on every run. The returned JWT is automatically saved to `authToken`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"john_doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"securePass1!\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/register",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "register"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoiNjY...\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/register – Duplicate User (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Response contains error message', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('msg');",
+                  "    pm.expect(json.msg).to.include('already exists');",
+                  "});",
+                  "",
+                  "pm.test('No token in error response', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.not.have.property('token');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{testUsername}}\",\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Attempt to register with the same credentials used in the previous request. Should return 400 with a 'User already exists' message."
+          }
+        },
+        {
+          "name": "POST /auth/register – Missing Email (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Response contains validation errors array', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('errors');",
+                  "    pm.expect(json.errors).to.be.an('array').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('Error references email field', function () {",
+                  "    const json   = pm.response.json();",
+                  "    const fields = json.errors.map(e => e.path || e.param || e.field || '');",
+                  "    pm.expect(fields.some(f => f.includes('email'))).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"incomplete_user\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Omit the email field. express-validator should catch this and return a 400 with a structured errors array."
+          }
+        },
+        {
+          "name": "POST /auth/register – Short Password (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error references password field', function () {",
+                  "    const json   = pm.response.json();",
+                  "    pm.expect(json).to.have.property('errors');",
+                  "    const fields = json.errors.map(e => e.path || e.param || e.field || '');",
+                  "    pm.expect(fields.some(f => f.includes('password'))).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"weakpassuser\",\n  \"email\": \"weak@example.com\",\n  \"password\": \"abc\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Password has only 3 characters, which is below the minimum of 6. Should fail with a 400 validation error."
+          }
+        },
+        {
+          "name": "POST /auth/register – Invalid Email Format (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Validation error present', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('errors');",
+                  "    pm.expect(json.errors).to.be.an('array').and.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"bademailuser\",\n  \"email\": \"this-is-not-an-email\",\n  \"password\": \"validpass\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Provide a malformed email address. express-validator's isEmail() check should reject it with 400."
+          }
+        },
+        {
+          "name": "POST /auth/register – Missing Username (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error references username field', function () {",
+                  "    const json   = pm.response.json();",
+                  "    pm.expect(json).to.have.property('errors');",
+                  "    const fields = json.errors.map(e => e.path || e.param || e.field || '');",
+                  "    pm.expect(fields.some(f => f.includes('username'))).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nousername@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Omit the username field entirely. Should return 400 with an error on the username field."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Auth – Login",
+      "item": [
+        {
+          "name": "POST /auth/login – Valid Credentials (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains a token', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('token');",
+                  "    pm.expect(json.token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('Token is a valid JWT structure (3 segments)', function () {",
+                  "    const json  = pm.response.json();",
+                  "    const parts = json.token.split('.');",
+                  "    pm.expect(parts).to.have.lengthOf(3);",
+                  "});",
+                  "",
+                  "// Refresh the stored token",
+                  "const json = pm.response.json();",
+                  "if (json.token) {",
+                  "    pm.collectionVariables.set('authToken', json.token);",
+                  "    console.log('Token refreshed from login response');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with the credentials registered in the Register step. The returned token is automatically saved to `authToken`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"securePass1!\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/login",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "login"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoiNjY...\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/login – Wrong Password (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Response contains invalid credentials message', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('msg');",
+                  "    pm.expect(json.msg.toLowerCase()).to.include('invalid');",
+                  "});",
+                  "",
+                  "pm.test('No token returned on failed login', function () {",
+                  "    pm.expect(pm.response.json()).to.not.have.property('token');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"THIS_IS_THE_WRONG_PASSWORD\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Use a correct email but wrong password. Should return 400 with 'Invalid credentials'."
+          }
+        },
+        {
+          "name": "POST /auth/login – Unknown Email (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Response message hides whether email exists (security)', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('msg');",
+                  "    // Should say 'Invalid credentials', NOT 'User not found'",
+                  "    pm.expect(json.msg.toLowerCase()).to.not.include('not found');",
+                  "    pm.expect(json.msg.toLowerCase()).to.include('invalid');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ghost_nobody@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Attempt to login with a non-existent email. Importantly, the response should say 'Invalid credentials' and NOT reveal that the email doesn't exist (security best practice)."
+          }
+        },
+        {
+          "name": "POST /auth/login – Invalid Email Format (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Validation errors array present', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('errors');",
+                  "    pm.expect(json.errors).to.be.an('array').and.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"not-an-email@@broken\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Send a malformed email to trigger express-validator before even hitting the database."
+          }
+        },
+        {
+          "name": "POST /auth/login – Missing Password (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Validation error for password field', function () {",
+                  "    const json   = pm.response.json();",
+                  "    pm.expect(json).to.have.property('errors');",
+                  "    const fields = json.errors.map(e => e.path || e.param || e.field || '');",
+                  "    pm.expect(fields.some(f => f.includes('password'))).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Send only email, no password field. express-validator's exists() check should reject this."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Auth – Protected Routes (Iteration 3)",
+      "item": [
+        {
+          "name": "GET /auth/me – No Token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Iteration 3 core check: protected routes return 401 without token",
+                  "pm.test('[Iteration 3] Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Response contains authorization error message', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('msg');",
+                  "});",
+                  "",
+                  "pm.test('No user data exposed in error response', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.not.have.property('username');",
+                  "    pm.expect(json).to.not.have.property('email');",
+                  "    pm.expect(json).to.not.have.property('token');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Call the protected /me endpoint with NO token header. Must return 401. This is the primary Iteration 3 visible outcome check."
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/me",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "me"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"msg\": \"No token, authorization denied\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /auth/me – Invalid Token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('[Iteration 3] Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Response contains token validation error', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('msg');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-auth-token",
+                "value": "eyJhbGciOiJIUzI1NiJ9.this.is.tampered",
+                "description": "A structurally invalid / tampered JWT"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Send a tampered / invalid JWT in the x-auth-token header. The middleware should reject it with 401."
+          },
+          "response": [
+            {
+              "name": "401 Invalid Token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  { "key": "x-auth-token", "value": "eyJhbGciOiJIUzI1NiJ9.this.is.tampered" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/me",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "me"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"msg\": \"Token is not valid\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /auth/me – Garbage String Token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('[Iteration 3] Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Error message present', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('msg');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-auth-token",
+                "value": "notavalidtokenatall",
+                "description": "Completely random garbage string"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Send a completely non-JWT string as the token. Should be rejected with 401."
+          }
+        },
+        {
+          "name": "GET /auth/me – Valid Token (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Iteration 3 core check: protected routes return 200 with valid token",
+                  "pm.test('[Iteration 3] Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains user data', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('username');",
+                  "    pm.expect(json).to.have.property('email');",
+                  "    pm.expect(json).to.have.property('_id');",
+                  "});",
+                  "",
+                  "pm.test('Password NOT exposed in response (security)', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.not.have.property('password');",
+                  "});",
+                  "",
+                  "pm.test('createdAt field present', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('createdAt');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-auth-token",
+                "value": "{{authToken}}",
+                "description": "JWT stored after registration or login"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Call the protected /me endpoint WITH the valid JWT stored by the Register or Login tests. Must return 200 with user data (minus password). This is the Iteration 3 success confirmation."
+          },
+          "response": [
+            {
+              "name": "200 OK – User Info",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  { "key": "x-auth-token", "value": "{{authToken}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/me",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "me"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"_id\": \"64abc123def456ghi789jkl0\",\n  \"username\": \"john_doe\",\n  \"email\": \"john@example.com\",\n  \"createdAt\": \"2024-01-15T10:30:00.000Z\",\n  \"updatedAt\": \"2024-01-15T10:30:00.000Z\",\n  \"__v\": 0\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Manual / Ad-hoc Tests",
+      "item": [
+        {
+          "name": "GET /auth/me – Paste Token Manually",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('User data returned', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('username');",
+                  "    pm.expect(json).to.have.property('email');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-auth-token",
+                "value": "PASTE_YOUR_TOKEN_HERE",
+                "description": "Manually paste a JWT here to test it directly"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Ad-hoc test – manually replace the header value with any JWT you want to inspect. Useful for debugging tokens from logs or other sources."
+          }
+        },
+        {
+          "name": "POST /auth/login – Custom Credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('Got a response', function () {",
+                  "    pm.response.to.have.status(pm.response.status === 'OK' ? 200 : pm.response.code);",
+                  "});",
+                  "",
+                  "if (json.token) {",
+                  "    pm.collectionVariables.set('authToken', json.token);",
+                  "    console.log('Custom login token saved to authToken');",
+                  "    pm.test('Login successful, token captured', function () {",
+                  "        pm.expect(json.token).to.be.a('string');",
+                  "    });",
+                  "} else {",
+                  "    console.warn('No token in response – check credentials');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"YOUR_EMAIL_HERE@example.com\",\n  \"password\": \"YOUR_PASSWORD_HERE\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Fill in your own credentials to get a fresh token. The token will be saved to `authToken` automatically."
+          }
+        }
+      ]
+    }
+  ]
+}
