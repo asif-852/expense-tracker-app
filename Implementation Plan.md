@@ -1,204 +1,321 @@
 # Expense Tracker Implementation Plan
 
-  Context
+## Context
 
-  We are building a MERN stack (MongoDB, Express.js, React, Node.js) expense tracker application with JWT-based authentication. Users can register, login, track
-  income and expenses, and view basic summaries. The goal is to implement this end-to-end in visible iterations where each iteration delivers tangible progress.
+We are building a MERN stack expense tracker with JWT-based authentication, DB-backed refresh tokens, and MongoDB persistence. Users can register, login, manage their account, track income and expenses in BDT, view summaries, and filter their transaction history.
 
-  Iteration Plan
+This file is the roadmap. It describes both completed and planned work. `CLAUDE.md` should mirror the current architecture and agent guidance.
 
-  Iteration 0: Project Setup & Foundation
+## Current Implementation Status
 
-  Goal: Establish project structure and basic tooling
-  - Create backend directory with package.json
-  - Create frontend directory with package.json
-  - Set up basic Express server
-  - Set up basic React app with Create React App
-  - Configure concurrent development script
-  - Visible Outcome: Running development servers showing "Hello World" from both frontend and backend
+| Iteration | Area | Status |
+| --- | --- | --- |
+| 0 | Project setup and foundation | Completed |
+| 1 | MongoDB connection and User model | Completed |
+| 2 | Authentication API foundation | Completed |
+| 3 | Auth hardening, sessions, account management | Completed for backend API |
+| 4 | Transaction model and CRUD API | Planned |
+| 5 | Frontend routing and app shell | Planned |
+| 6 | Authentication frontend | Planned |
+| 7 | Transaction listing and creation UI | Planned |
+| 8 | Transaction editing and deletion UI | Planned |
+| 9 | Summary dashboard | Planned |
+| 10 | Dynamic category filtering | Planned |
+| 11 | Validation, testing, and polish | Planned |
+| 12 | Deployment preparation | Planned |
+| 13 | Recurring transactions | Later |
+| 14 | Import/export | Later |
 
-  Iteration 1: MongoDB Connection & User Model
+## Iteration Plan
 
-  Goal: Database connectivity and user data model
-  - Connect backend to MongoDB using Mongoose
-  - Create User model with fields: username, email, password (hashed), createdAt
-  - Implement password hashing with bcrypt
-  - Visible Outcome: Ability to successfully connect to MongoDB and create user documents via MongoDB shell or API test
+### Iteration 0: Project Setup and Foundation
 
-  Iteration 2: Authentication API (Register/Login)
+Goal: Establish project structure and basic tooling.
 
-  Goal: User registration and login endpoints
-  - POST /api/auth/register - hash password, create user, return JWT
-  - POST /api/auth/login - validate credentials, return JWT
-  - GET /api/auth/me - get current user info from token
-  - Implement JWT middleware for route protection
-  - Visible Outcome: Working registration and login endpoints testable via Postman/curl returning JWT tokens
+- Create backend directory with package.json.
+- Create frontend directory with package.json.
+- Set up basic Express server.
+- Set up basic React app.
+- Configure concurrent development script.
+- Visible Outcome: Running development servers showing a basic backend response and frontend shell.
 
-  Iteration 3: Protected Route Middleware & Error Handling
+### Iteration 1: MongoDB Connection and User Model
 
-  Goal: Security and robustness for authenticated routes
-  - Create auth middleware to verify JWT tokens
-  - Apply middleware to protect transaction routes
-  - Implement consistent error handling middleware
-  - Add input validation for auth endpoints
-  - Visible Outcome: Protected routes return 401 without valid token, 200 with valid token
+Goal: Database connectivity and user data model.
 
-  Iteration 4: Transaction Model & CRUD API
+- Connect backend to MongoDB using Mongoose.
+- Create User model with username, email, password hash, and timestamps.
+- Store passwords hashed with bcrypt.
+- Make password excluded by default from User query results.
+- Visible Outcome: Backend can connect to MongoDB and create user documents safely.
 
-  Goal: Core expense tracking functionality
-  - Create Transaction model with fields: amount, type (income/expense), category, description, date, userId (ref), createdAt
-  - Implement RESTful transaction endpoints:
-    - GET /api/transactions - get user's transactions
-    - POST /api/transactions - create new transaction
-    - PUT /api/transactions/:id - update transaction
-    - DELETE /api/transactions/:id - delete transaction
-  - Add validation and error handling
-  - Visible Outcome: Full CRUD operations on transactions working via API testing tools
+### Iteration 2: Authentication API Foundation
 
-  Iteration 5: Frontend Setup & Routing
+Goal: User registration, login, and current-user lookup.
 
-  Goal: Basic React application structure
-  - Set up React Router for client-side routing
-  - Create basic layout with navigation
-  - Set up Axios instance for API calls
-  - Create auth context for managing user state
-  - Visible Outcome: Navigable SPA with placeholder pages and working context/provider
+- POST /api/auth/register - create user and return an access/refresh token pair.
+- POST /api/auth/login - validate credentials and return an access/refresh token pair.
+- GET /api/auth/me - get current user info from a valid access token.
+- Use `Authorization: Bearer <accessToken>` for protected routes.
+- Do not allow users to change username or email after registration.
+- Visible Outcome: Users can register, login, and call a protected current-user endpoint.
 
-  Iteration 6: Authentication Frontend
+### Iteration 3: Auth Hardening, Sessions, and Account Management
 
-  Goal: User registration and login UI
-  - Create Register page with form validation
-  - Create Login page with form validation
-  - Implement auth context actions (login, logout, set user)
-  - Store JWT in localStorage/context
-  - Protect routes based on auth status
-  - Visible Outcome: Working registration and login forms that successfully authenticate with backend
+Goal: Make authentication usable and safer for real users.
 
-  Iteration 7: Transaction Listing & Creation UI
+- Create protected-route middleware to verify short-lived access tokens.
+- Use short-lived access tokens, default `ACCESS_TOKEN_EXPIRES_IN=15m`.
+- Add DB-backed refresh tokens with hashed token storage, expiration, revocation timestamp, and TTL cleanup.
+- POST /api/auth/refresh - rotate a valid refresh token and return a new access/refresh token pair.
+- POST /api/auth/logout - revoke the submitted refresh token; frontend must also clear local auth state.
+- PUT /api/auth/password - verify current password, enforce password complexity, save new password, revoke all existing refresh tokens, and return a fresh access/refresh token pair.
+- DELETE /api/auth/me - require password confirmation, revoke/delete refresh tokens, delete the user, and later cascade-delete transactions once the Transaction model exists.
+- Apply the same password complexity rules everywhere: minimum 8 characters, uppercase letter, lowercase letter, and number.
+- Implement centralized error handling and consistent operational errors.
+- Visible Outcome: Users can refresh sessions, logout server-side, update password, delete account, and old refresh tokens are invalidated after sensitive account changes.
 
-  Goal: Core expense tracking interface
-  - Create Transactions page showing list of user's transactions
-  - Create Add Transaction form (income/expense)
-  - Implement API calls to fetch and create transactions
-  - Add formatting for amounts and dates
-  - Visible Outcome: Ability to view, add, and see transactions in the list
+### Iteration 4: Transaction Model and CRUD API
 
-  Iteration 8: Transaction Editing & Deletion
+Goal: Core expense tracking functionality.
 
-  Goal: Complete transaction management
-  - Implement edit transaction functionality
-  - Implement delete transaction with confirmation
-  - Update transaction list in real-time after mutations
-  - Add loading states and error handling
-  - Visible Outcome: Full CRUD operations on transactions through the UI
+- Create Transaction model with amount, type, category, description, date, userId, and timestamps.
+- Use BDT as the only supported currency.
+- Store transaction amounts as whole integer BDT values.
+- Validate transaction type as income or expense.
+- Default transaction sort order is most recent first.
+- Implement protected REST endpoints:
+- GET /api/transactions - list user's transactions with pagination and filters.
+- POST /api/transactions - create a transaction.
+- PUT /api/transactions/:id - update a transaction owned by the user.
+- DELETE /api/transactions/:id - delete a transaction owned by the user.
+- Support query parameters for list endpoint: `page`, `limit`, `sort`, `type`, `category`, `from`, `to`, and `search`.
+- Ensure every transaction query is scoped to the authenticated user.
+- Visible Outcome: Full CRUD operations work via API testing tools, with pagination and user-owned data isolation.
 
-  Iteration 9: Summary Dashboard
+### Iteration 5: Frontend Setup and Routing
 
-  Goal: Income/expense visualization and summary
-  - Create Dashboard/Summary page
-  - Calculate total income, total expenses, net balance
-  - Display summary cards with formatted numbers
-  - Optional: Simple chart showing income vs expenses
-  - Visible Outcome: Dashboard showing key financial metrics based on user's transactions
+Goal: Basic React application structure.
 
-  Iteration 10: Category Management & Filtering
+- Set up React Router for client-side routing.
+- Create app layout with navigation.
+- Set up API service layer for backend communication.
+- Create auth context for user state, access token, refresh token, and auth lifecycle actions.
+- Create protected route handling for authenticated pages.
+- Visible Outcome: Navigable SPA with placeholder pages and working auth-aware routing.
 
-  Goal: Enhanced usability features
-  - Add category selection dropdown (common expense/income categories)
-  - Implement filtering transactions by type, category, date range
-  - Add search functionality for transaction descriptions
-  - Visible Outcome: Ability to filter and search through transactions
+### Iteration 6: Authentication Frontend
 
-  Iteration 11: Validation, Testing & Polish
+Goal: User registration, login, logout, token refresh, and account management UI.
 
-  Goal: Quality assurance and user experience improvements
-  - Add form validation (required fields, valid amounts, etc.)
-  - Implement proper error messages from API
-  - Add loading/spinner states
-  - Improve UI styling and responsiveness
-  - Write basic tests for critical functions
-  - Visible Outcome: Polished application with proper validation and user feedback
+- Create Register page with frontend validation matching backend rules.
+- Create Login page with validation.
+- Store and update auth state consistently.
+- Implement refresh-token flow so expired access tokens can be renewed through POST /api/auth/refresh.
+- Implement logout by calling POST /api/auth/logout, clearing frontend auth state, and redirecting away from protected pages.
+- Create Account Settings page with update-password form.
+- Create delete-account flow with password confirmation and clear warning.
+- On password update, replace stored tokens with the fresh access/refresh pair returned by the API.
+- On account deletion, clear auth state and redirect to register/login.
+- Do not provide username/email change UI.
+- Visible Outcome: Users can complete all auth and account-management flows through the frontend.
 
-  Iteration 12: Deployment Preparation
+### Iteration 7: Transaction Listing and Creation UI
 
-  Goal: Production readiness
-  - Configure environment variables for different environments
-  - Set up build scripts for frontend and backend
-  - Create production startup scripts
-  - Document deployment process
-  - Visible Outcome: Application builds successfully and can be started in production mode
+Goal: Core expense tracking interface.
 
-  Verification Approach
+- Create Transactions page showing paginated transaction list.
+- Show BDT amounts as whole integer values.
+- Default UI order is most recent first.
+- Create Add Transaction form for income and expense.
+- Implement API calls to fetch and create transactions.
+- Add formatting for dates and amounts.
+- Visible Outcome: Users can view, paginate, and create transactions.
 
-  Each iteration will be verified by:
-  1. Manual testing of implemented features
-  2. API testing with Postman/curl for backend endpoints
-  3. UI testing for frontend components
-  4. Checking for proper error handling and edge cases
-  5. Ensuring code follows established patterns and conventions
+### Iteration 8: Transaction Editing and Deletion UI
 
-  Files to be Created/Modified
+Goal: Complete transaction management.
 
-  Backend:
+- Implement edit transaction functionality.
+- Implement delete transaction with confirmation.
+- Update transaction list after mutations.
+- Add loading states and error handling.
+- Visible Outcome: Users can edit and delete their own transactions through the UI.
 
-  - backend/server.js (entry point)
-  - backend/config/database.js (MongoDB connection)
-  - backend/config/jwt.js (JWT configuration)
-  - backend/models/User.js
-  - backend/models/Transaction.js
-  - backend/middleware/auth.js
-  - backend/middleware/validation.js
-  - backend/middleware/errorHandler.js
-  - backend/routes/authRoutes.js
-  - backend/routes/transactionRoutes.js
-  - backend/controllers/authController.js
-  - backend/controllers/transactionController.js
-  - backend/utils/passwordUtils.js (if needed)
-  - backend/package.json
-  - backend/.env
+### Iteration 9: Summary Dashboard
 
-  Frontend:
+Goal: Income/expense visualization and summary.
 
-  - frontend/src/index.js
-  - frontend/src/App.js
-  - frontend/src/index.css
-  - frontend/src/routes/AppRoutes.js
-  - frontend/src/context/AuthContext.js
-  - frontend/src/services/api.js (Axios instance)
-  - frontend/src/services/authService.js
-  - frontend/src/services/transactionService.js
-  - frontend/src/components/layout/Navbar.js
-  - frontend/src/components/layout/PrivateRoute.js
-  - frontend/src/pages/Login.js
-  - frontend/src/pages/Register.js
-  - frontend/src/pages/Dashboard.js
-  - frontend/src/pages/Transactions.js
-  - frontend/src/components/TransactionForm.js
-  - frontend/src/components/TransactionList.js
-  - frontend/src/components/TransactionItem.js
-  - frontend/src/components/SummaryCards.js
-  - frontend/package.json
-  - frontend/.env
+- Create Dashboard/Summary page.
+- Calculate total income, total expenses, and net balance.
+- Support date ranges such as current month, last month, current year, and custom from/to dates.
+- Add backend summary query support with `from` and `to` parameters.
+- Display summary cards with BDT formatting.
+- Optional: Add a simple chart showing income vs expenses.
+- Visible Outcome: Users can view financial summaries for useful date ranges.
 
-  Dependencies
+### Iteration 10: Dynamic Category Filtering
 
-  Backend:
+Goal: Help users find and analyze transactions by category.
 
-  - express, mongoose, bcryptjs, jsonwebtoken, dotenv, cors, validator
+- Derive available filter categories dynamically from the user's transactions.
+- Allow users to filter by type, category, date range, and search text.
+- Keep filtering compatible with paginated transaction API responses.
+- Optional later enhancement: allow user-managed custom category presets.
+- Visible Outcome: Users can filter transaction history by dynamic categories and other criteria.
 
-  Frontend:
+### Iteration 11: Validation, Testing, and Polish
 
-  - react, react-dom, react-router-dom, axios, dotenv
+Goal: Quality assurance and user experience improvements.
 
-  Success Criteria
+- Add consistent frontend and backend validation for all forms.
+- Implement proper user-facing error messages from API responses.
+- Add loading, empty, and success states.
+- Improve UI styling and responsiveness.
+- Add backend tests for auth, refresh tokens, account management, and transaction ownership.
+- Add frontend tests for auth forms, protected routes, transaction flows, and dashboard states.
+- Visible Outcome: Polished application with clear feedback and meaningful automated coverage.
 
-  By the end of all iterations, users should be able to:
-  1. Register a new account
-  2. Login with credentials
-  3. View dashboard with income/expense summary
-  4. Add income and expense transactions
-  5. Edit existing transactions
-  6. Delete transactions
-  7. Filter transactions by type/category/date
-  8. Logout securely
-  9. Have persisted data in MongoDB
+### Iteration 12: Deployment Preparation
+
+Goal: Production readiness.
+
+- Configure environment variables for development and production.
+- Ensure build scripts work for frontend and backend.
+- Document deployment process.
+- Run audit/build/test checks before release.
+- Visible Outcome: Application builds successfully and can be started in a production-like environment.
+
+### Iteration 13: Recurring Transactions
+
+Goal: Support common repeated income and expense patterns later.
+
+- Add recurring transaction rules for salary, rent, subscriptions, and bills.
+- Generate or suggest transactions based on recurrence schedule.
+- Visible Outcome: Users can reduce manual entry for repeated financial activity.
+
+### Iteration 14: Import and Export
+
+Goal: Give users portability and backup options later.
+
+- Export transactions to CSV.
+- Consider CSV import from spreadsheets.
+- Visible Outcome: Users can move their data in and out of the app.
+
+## Verification Approach
+
+Each iteration should be verified by:
+
+1. Manual testing of implemented features.
+2. API testing with Postman/curl/PowerShell scripts.
+3. UI testing for frontend components and flows.
+4. Checking security and edge cases.
+5. Ensuring code follows established patterns and updates both docs when non-trivial behavior changes.
+
+## Files to be Created or Modified
+
+### Backend
+
+- backend/server.js
+- backend/config/database.js
+- backend/models/User.js
+- backend/models/RefreshToken.js
+- backend/models/Transaction.js
+- backend/middleware/auth.js
+- backend/middleware/validation.js
+- backend/middleware/errorHandler.js
+- backend/routes/authRoutes.js
+- backend/routes/transactionRoutes.js
+- backend/routes/summaryRoutes.js
+- backend/controllers/authController.js
+- backend/controllers/transactionController.js
+- backend/controllers/summaryController.js
+- backend/utils/passwordUtils.js, if shared password helpers become useful
+- backend/package.json
+- backend/.env
+
+### Frontend
+
+- frontend/src/index.js
+- frontend/src/App.js
+- frontend/src/index.css
+- frontend/src/routes/AppRoutes.js
+- frontend/src/context/AuthContext.js
+- frontend/src/services/api.js
+- frontend/src/services/authService.js
+- frontend/src/services/transactionService.js
+- frontend/src/components/layout/Navbar.js
+- frontend/src/components/layout/PrivateRoute.js
+- frontend/src/pages/Login.js
+- frontend/src/pages/Register.js
+- frontend/src/pages/AccountSettings.js
+- frontend/src/pages/Dashboard.js
+- frontend/src/pages/Transactions.js
+- frontend/src/components/TransactionForm.js
+- frontend/src/components/TransactionList.js
+- frontend/src/components/TransactionItem.js
+- frontend/src/components/SummaryCards.js
+- frontend/package.json
+- frontend/.env
+
+## Dependencies
+
+### Backend
+
+- express
+- mongoose
+- bcryptjs
+- jsonwebtoken
+- dotenv
+- cors
+- helmet
+- express-validator
+- validator
+
+### Frontend
+
+- react
+- react-dom
+- react-router-dom
+- axios
+- testing-library packages
+- web-vitals
+
+## Environment Variables
+
+Backend:
+
+```bash
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/expense-tracker
+JWT_SECRET=replace_with_a_strong_secret
+NODE_ENV=development
+ALLOWED_ORIGIN=http://localhost:3000
+ACCESS_TOKEN_EXPIRES_IN=15m
+REFRESH_TOKEN_EXPIRES_DAYS=7
+```
+
+Frontend:
+
+```bash
+REACT_APP_API_URL=http://localhost:5000/api
+```
+
+## Success Criteria
+
+By the end of all core iterations, users should be able to:
+
+1. Register a new account.
+2. Login with credentials.
+3. Maintain a session using short-lived access tokens and DB-backed refresh tokens.
+4. Logout with server-side refresh token revocation.
+5. Update password and invalidate old refresh tokens.
+6. Delete their account after password confirmation.
+7. View dashboard with BDT income/expense summary.
+8. Filter dashboard summaries by useful date ranges.
+9. Add income and expense transactions using whole integer BDT amounts.
+10. Edit existing transactions.
+11. Delete transactions.
+12. View paginated transactions sorted most recent first by default.
+13. Filter transactions by type, dynamic category, date range, and search text.
+14. Have persisted, user-isolated data in MongoDB.

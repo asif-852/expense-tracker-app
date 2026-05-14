@@ -75,20 +75,19 @@ const errorHandler = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || (String(err.statusCode).startsWith('4') ? 'fail' : 'error');
 
+  // Always transform known DB/JWT error types into operational AppErrors so
+  // they produce the correct HTTP status in all environments (not just production).
+  let error = { ...err, message: err.message, name: err.name };
+  if (error.name === 'CastError')         error = handleCastError(error);
+  if (error.code === 11000)               error = handleDuplicateKeyError(error);
+  if (error.name === 'ValidationError')   error = handleValidationError(error);
+  if (error.name === 'JsonWebTokenError') error = handleJWTError();
+  if (error.name === 'TokenExpiredError') error = handleJWTExpiredError();
+
   const isDev = process.env.NODE_ENV === 'development';
-
   if (isDev) {
-    sendErrorDev(err, res);
+    sendErrorDev(error, res);
   } else {
-    let error = { ...err, message: err.message, name: err.name };
-
-    // Transform known error types into operational AppErrors
-    if (error.name === 'CastError')              error = handleCastError(error);
-    if (error.code === 11000)                    error = handleDuplicateKeyError(error);
-    if (error.name === 'ValidationError')        error = handleValidationError(error);
-    if (error.name === 'JsonWebTokenError')      error = handleJWTError();
-    if (error.name === 'TokenExpiredError')      error = handleJWTExpiredError();
-
     sendErrorProd(error, res);
   }
 };

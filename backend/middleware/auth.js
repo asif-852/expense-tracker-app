@@ -1,21 +1,20 @@
 const jwt = require('jsonwebtoken');
+const { AppError } = require('./errorHandler');
 
 // Middleware to authenticate JWT
 module.exports = function (req, res, next) {
-  // Get token from header
-  const token = req.header('x-auth-token');
+  // Extract Bearer token from the Authorization header (RFC 6750)
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.startsWith('Bearer ')
+    ? authHeader.slice(7)
+    : null;
 
-  // Check if not token
   if (!token) {
-    return res.status(401).json({ msg: 'No token, authorization denied' });
+    throw new AppError('No token, authorization denied', 401);
   }
 
-  // Verify token
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded.user;
-    next();
-  } catch (err) {
-    res.status(401).json({ msg: 'Token is not valid' });
-  }
+  // Express catches synchronous jwt.verify errors and forwards them to errorHandler.
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  req.user = decoded.user;
+  next();
 };
