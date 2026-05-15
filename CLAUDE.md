@@ -16,8 +16,8 @@ This file describes the current architecture plus planned roadmap context. `Impl
 | User model | Implemented | Username/email/password hash with password excluded by default |
 | RefreshToken model | Implemented | Hashed DB-backed refresh tokens with revocation and TTL cleanup |
 | Auth API | Implemented | Register, login, refresh, logout, get me, update password, delete account |
-| Transaction API | Planned | See Iteration 4 |
-| Frontend app shell | Planned | Current frontend may still be scaffold/basic until Iteration 5 |
+| Transaction API | Implemented | CRUD with pagination, filters, search, ownership isolation |
+| Frontend app shell | Implemented | React Router, AuthContext, Navbar, PrivateRoute, API service with auto-refresh |
 | Frontend auth UI | Planned | See Iteration 6 |
 | Transaction UI | Planned | See Iterations 7 and 8 |
 | Dashboard/summary UI | Planned | See Iteration 9 |
@@ -117,7 +117,7 @@ npm run build
 
 - **User**: username, email, password hash, timestamps.
 - **RefreshToken**: user, tokenHash, expiresAt, revokedAt, timestamps.
-- **Transaction**: planned amount, type, category, description, date, userId, timestamps.
+- **Transaction**: amount (whole integer BDT), type (income/expense), category, description, date, userId, timestamps.
 
 Transaction rules:
 
@@ -139,9 +139,9 @@ Auth:
 - `PUT /api/auth/password` - update password, protected; revokes old refresh tokens and returns fresh tokens.
 - `DELETE /api/auth/me` - delete account with password confirmation, protected.
 
-Transactions, planned:
+Transactions:
 
-- `GET /api/transactions` - paginated list with `page`, `limit`, `sort`, `type`, `category`, `from`, `to`, `search`.
+- `GET /api/transactions` - paginated list with `page`, `limit`, `sort`, `order`, `type`, `category`, `from`, `to`, `search`.
 - `POST /api/transactions` - create transaction.
 - `PUT /api/transactions/:id` - update owned transaction.
 - `DELETE /api/transactions/:id` - delete owned transaction.

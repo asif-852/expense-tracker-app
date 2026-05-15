@@ -41,6 +41,9 @@ app.get('/', (req, res) => {
 // Auth routes
 app.use('/api/auth', require('./routes/authRoutes'));
 
+// Transaction routes
+app.use('/api/transactions', require('./routes/transactionRoutes'));
+
 // 404 handler — must come after all valid routes
 app.use(notFound);
 

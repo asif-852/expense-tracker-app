@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const RefreshToken = require('../models/RefreshToken');
+const Transaction = require('../models/Transaction');
 const { AppError } = require('../middleware/errorHandler');
 
 const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || '15m';
@@ -215,9 +216,8 @@ exports.deleteAccount = async (req, res) => {
   }
 
   await RefreshToken.deleteMany({ user: req.user.id });
+  await Transaction.deleteMany({ userId: req.user.id });
   await User.findByIdAndDelete(req.user.id);
-  // NOTE (Iteration 4): Once the Transaction model exists, cascade-delete here:
-  // await Transaction.deleteMany({ userId: req.user.id });
 
   return res.status(200).json({ message: 'Account deleted successfully' });
 };

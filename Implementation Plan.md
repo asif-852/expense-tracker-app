@@ -14,8 +14,8 @@ This file is the roadmap. It describes both completed and planned work. `CLAUDE.
 | 1 | MongoDB connection and User model | Completed |
 | 2 | Authentication API foundation | Completed |
 | 3 | Auth hardening, sessions, account management | Completed for backend API |
-| 4 | Transaction model and CRUD API | Planned |
-| 5 | Frontend routing and app shell | Planned |
+| 4 | Transaction model and CRUD API | Completed |
+| 5 | Frontend routing and app shell | Completed |
 | 6 | Authentication frontend | Planned |
 | 7 | Transaction listing and creation UI | Planned |
 | 8 | Transaction editing and deletion UI | Planned |
