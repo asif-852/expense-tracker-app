@@ -16,9 +16,9 @@ This file is the roadmap. It describes both completed and planned work. `CLAUDE.
 | 3 | Auth hardening, sessions, account management | Completed for backend API |
 | 4 | Transaction model and CRUD API | Completed |
 | 5 | Frontend routing and app shell | Completed |
-| 6 | Authentication frontend | Planned |
-| 7 | Transaction listing and creation UI | Planned |
-| 8 | Transaction editing and deletion UI | Planned |
+| 6 | Authentication frontend | Completed |
+| 7 | Transaction listing and creation UI | Completed |
+| 8 | Transaction editing and deletion UI | Completed |
 | 9 | Summary dashboard | Planned |
 | 10 | Dynamic category filtering | Planned |
 | 11 | Validation, testing, and polish | Planned |

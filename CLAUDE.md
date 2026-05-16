@@ -18,8 +18,8 @@ This file describes the current architecture plus planned roadmap context. `Impl
 | Auth API | Implemented | Register, login, refresh, logout, get me, update password, delete account |
 | Transaction API | Implemented | CRUD with pagination, filters, search, ownership isolation |
 | Frontend app shell | Implemented | React Router, AuthContext, Navbar, PrivateRoute, API service with auto-refresh |
-| Frontend auth UI | Planned | See Iteration 6 |
-| Transaction UI | Planned | See Iterations 7 and 8 |
+| Frontend auth UI | Implemented | Register, Login, Account Settings (password update, delete account), token refresh |
+| Transaction UI | Implemented | Paginated list, add/edit/delete with inline forms, loading/empty states |
 | Dashboard/summary UI | Planned | See Iteration 9 |
 | Dynamic category filtering | Planned | See Iteration 10 |
 | Recurring transactions | Later | See Iteration 13 |
@@ -74,10 +74,10 @@ npm run build
 ```text
 /backend
   /config         # Database/configuration files
-  /controllers    # Request handlers
+  /controllers    # Request handlers (authController, transactionController)
   /middleware     # Auth, errors, validation-related middleware
-  /models         # User, RefreshToken, planned Transaction
-  /routes         # API route definitions
+  /models         # User, RefreshToken, Transaction
+  /routes         # API route definitions (authRoutes, transactionRoutes)
   /utils          # Shared helpers if needed
   server.js       # Backend entry point
   package.json    # Backend dependencies and scripts
@@ -85,14 +85,17 @@ npm run build
 /frontend
   /public         # Static assets
   /src
-    /components   # Reusable UI components
-    /context      # Planned auth/app state context
-    /hooks        # Planned custom hooks
-    /pages        # Planned page components
-    /routes       # Planned route configuration
-    /services     # Planned API service calls
-    /utils        # Planned frontend utilities
+    /components
+      /layout     # Navbar, PrivateRoute
+      TransactionForm.js   # Reusable add/edit form with type toggle and validation
+      TransactionItem.js   # Single transaction row with inline edit/delete
+      TransactionList.js   # Paginated list with empty/loading skeleton states
+    /context      # AuthContext — user state, login, register, logout, token lifecycle
+    /pages        # Login, Register, AccountSettings, Dashboard, Transactions
+    /routes       # AppRoutes with public/private route guards
+    /services     # api.js (axios with auto-refresh), authService, transactionService
     App.js        # Main App component
+    index.css     # Global design system and component styles
     index.js      # Frontend entry point
   package.json    # Frontend dependencies and scripts
 ```
@@ -150,14 +153,14 @@ Summary, planned:
 
 - `GET /api/summary` - income/expense summary with optional `from` and `to` date range.
 
-## State Management Plan
+## State Management
 
-- Use React Context API for authentication state.
-- Track current user, access token, refresh token, loading state, and auth errors.
-- API service layer should attach access tokens to protected requests.
-- API service layer should call refresh endpoint when access token expires.
-- Logout should call the backend logout endpoint and clear frontend state.
-- Local component state is fine for forms and page-specific UI state.
+- **AuthContext** provides user state, login, register, logout, updatePassword, deleteAccount, loading, and error.
+- Access tokens are stored in localStorage and attached via axios request interceptor.
+- Axios response interceptor auto-refreshes on 401 using the stored refresh token, with queue-based retry for concurrent requests.
+- Logout calls the backend logout endpoint and clears all local auth state.
+- Transaction state is managed locally in the Transactions page (list, pagination, loading, error).
+- Form-level state for TransactionForm, inline edit in TransactionItem, and delete confirmation are component-local.
 
 ## Code Quality and Standards
 
