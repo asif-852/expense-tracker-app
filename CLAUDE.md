@@ -20,7 +20,8 @@ This file describes the current architecture plus planned roadmap context. `Impl
 | Frontend app shell | Implemented | React Router, AuthContext, Navbar, PrivateRoute, API service with auto-refresh |
 | Frontend auth UI | Implemented | Register, Login, Account Settings (password update, delete account), token refresh |
 | Transaction UI | Implemented | Paginated list, add/edit/delete with inline forms, loading/empty states |
-| Dashboard/summary UI | Planned | See Iteration 9 |
+| Summary API | Implemented | GET /api/summary with date range filters, aggregation by type and category |
+| Dashboard/summary UI | Implemented | Date range picker, summary cards, income vs expense chart, category breakdown, recent transactions |
 | Dynamic category filtering | Planned | See Iteration 10 |
 | Recurring transactions | Later | See Iteration 13 |
 | Import/export | Later | See Iteration 14 |
@@ -74,10 +75,10 @@ npm run build
 ```text
 /backend
   /config         # Database/configuration files
-  /controllers    # Request handlers (authController, transactionController)
+  /controllers    # Request handlers (authController, transactionController, summaryController)
   /middleware     # Auth, errors, validation-related middleware
   /models         # User, RefreshToken, Transaction
-  /routes         # API route definitions (authRoutes, transactionRoutes)
+  /routes         # API route definitions (authRoutes, transactionRoutes, summaryRoutes)
   /utils          # Shared helpers if needed
   server.js       # Backend entry point
   package.json    # Backend dependencies and scripts
@@ -87,13 +88,14 @@ npm run build
   /src
     /components
       /layout     # Navbar, PrivateRoute
+      SummaryCards.js      # Income/expense/balance cards with icons and skeleton states
       TransactionForm.js   # Reusable add/edit form with type toggle and validation
       TransactionItem.js   # Single transaction row with inline edit/delete
       TransactionList.js   # Paginated list with empty/loading skeleton states
     /context      # AuthContext — user state, login, register, logout, token lifecycle
     /pages        # Login, Register, AccountSettings, Dashboard, Transactions
     /routes       # AppRoutes with public/private route guards
-    /services     # api.js (axios with auto-refresh), authService, transactionService
+    /services     # api.js (axios with auto-refresh), authService, transactionService, summaryService
     App.js        # Main App component
     index.css     # Global design system and component styles
     index.js      # Frontend entry point
@@ -149,9 +151,9 @@ Transactions:
 - `PUT /api/transactions/:id` - update owned transaction.
 - `DELETE /api/transactions/:id` - delete owned transaction.
 
-Summary, planned:
+Summary:
 
-- `GET /api/summary` - income/expense summary with optional `from` and `to` date range.
+- `GET /api/summary` - income/expense summary with optional `from` and `to` date range. Returns `totalIncome`, `totalExpense`, `netBalance`, counts, category breakdowns, and 5 most recent transactions.
 
 ## State Management
 
@@ -160,6 +162,7 @@ Summary, planned:
 - Axios response interceptor auto-refreshes on 401 using the stored refresh token, with queue-based retry for concurrent requests.
 - Logout calls the backend logout endpoint and clears all local auth state.
 - Transaction state is managed locally in the Transactions page (list, pagination, loading, error).
+- Dashboard state (summary data, date range selection, loading) is managed locally in the Dashboard page.
 - Form-level state for TransactionForm, inline edit in TransactionItem, and delete confirmation are component-local.
 
 ## Code Quality and Standards

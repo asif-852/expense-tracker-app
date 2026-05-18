@@ -19,7 +19,7 @@ This file is the roadmap. It describes both completed and planned work. `CLAUDE.
 | 6 | Authentication frontend | Completed |
 | 7 | Transaction listing and creation UI | Completed |
 | 8 | Transaction editing and deletion UI | Completed |
-| 9 | Summary dashboard | Planned |
+| 9 | Summary dashboard | Completed |
 | 10 | Dynamic category filtering | Planned |
 | 11 | Validation, testing, and polish | Planned |
 | 12 | Deployment preparation | Planned |
