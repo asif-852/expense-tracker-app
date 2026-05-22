@@ -6,6 +6,60 @@
 
 /* ── CSS Variables / Design Tokens ─────────────────────────── */
 :root {
+  /* Color Scheme */
+  --color-scheme: light;
+
+  /* Primary palette */
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-primary-light: rgba(79, 70, 229, 0.08);
+
+  /* Semantic colors */
+  --color-income: #059669;
+  --color-income-light: rgba(5, 150, 105, 0.08);
+  --color-expense: #dc2626;
+  --color-expense-light: rgba(220, 38, 38, 0.08);
+  --color-balance: #4f46e5;
+  --color-balance-light: rgba(79, 70, 229, 0.08);
+
+  /* Neutrals */
+  --color-bg: #f8fafc;
+  --color-bg-elevated: #ffffff;
+  --color-bg-card: #ffffff;
+  --color-bg-input: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-focus: #4f46e5;
+  --color-text: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
+
+  /* Danger */
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-light: rgba(220, 38, 38, 0.08);
+
+  /* Sizing */
+  --navbar-height: 64px;
+  --border-radius: 12px;
+  --border-radius-sm: 8px;
+  --border-radius-lg: 16px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.04), 0 2px 6px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 12px 24px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.08);
+
+  /* Transitions */
+  --transition: 0.2s ease;
+
+  /* Navbar background */
+  --color-navbar-bg: rgba(248, 250, 252, 0.8);
+}
+
+html[data-theme='dark'] {
+  /* Color Scheme */
+  --color-scheme: dark;
+
   /* Primary palette */
   --color-primary: #6366f1;
   --color-primary-hover: #4f46e5;
@@ -35,20 +89,15 @@
   --color-danger-hover: #dc2626;
   --color-danger-light: rgba(239, 68, 68, 0.1);
 
-  /* Sizing */
-  --navbar-height: 64px;
-  --border-radius: 12px;
-  --border-radius-sm: 8px;
-  --border-radius-lg: 16px;
-
   /* Shadows */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
 
-  /* Transitions */
-  --transition: 0.2s ease;
+  /* Navbar background */
+  --color-navbar-bg: rgba(15, 17, 23, 0.85);
 }
+
 
 /* ── Reset & Base ──────────────────────────────────────────── */
 *,
@@ -84,7 +133,7 @@ a:hover {
   top: 0;
   z-index: 100;
   height: var(--navbar-height);
-  background: rgba(15, 17, 23, 0.85);
+  background: var(--color-navbar-bg);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--color-border);
 }
@@ -164,6 +213,57 @@ a:hover {
   font-size: 0.85rem;
   color: var(--color-text-secondary);
   font-weight: 500;
+}
+
+/* Navbar Right Group */
+.navbar-right-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 100%;
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--border-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition);
+  padding: 0;
+}
+
+.theme-toggle-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-text-secondary);
+  background: var(--color-bg-input);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle-btn:active {
+  transform: translateY(0);
+}
+
+.theme-toggle-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle-btn:hover svg {
+  transform: rotate(20deg);
 }
 
 /* Hamburger (mobile) */
@@ -1256,7 +1356,7 @@ a:hover {
 .form-control--date {
   max-width: 180px;
   font-size: 0.85rem;
-  color-scheme: dark;
+  color-scheme: var(--color-scheme);
 }
 
 /* ── Mini Bar Chart ────────────────────────────────────────── */
