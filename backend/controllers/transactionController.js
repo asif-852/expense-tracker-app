@@ -1,6 +1,7 @@
 const { validationResult } = require('express-validator');
 const Transaction = require('../models/Transaction');
 const { AppError } = require('../middleware/errorHandler');
+const { buildDateFilter } = require('../utils/dateRange');
 
 /**
  * GET /api/transactions
@@ -44,24 +45,8 @@ exports.listTransactions = async (req, res) => {
     filter.category = category;
   }
 
-  // Date range filtering
-  if (from || to) {
-    filter.date = {};
-    if (from) {
-      const fromDate = new Date(from);
-      if (isNaN(fromDate.getTime())) {
-        throw new AppError("Invalid 'from' date format", 400);
-      }
-      filter.date.$gte = fromDate;
-    }
-    if (to) {
-      const toDate = new Date(to);
-      if (isNaN(toDate.getTime())) {
-        throw new AppError("Invalid 'to' date format", 400);
-      }
-      filter.date.$lte = toDate;
-    }
-  }
+  // Date range filtering — `to` is auto-extended to end-of-day.
+  Object.assign(filter, buildDateFilter({ from, to }));
 
   // Text search on description and category
   if (search) {

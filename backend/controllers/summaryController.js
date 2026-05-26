@@ -1,5 +1,6 @@
+const mongoose = require('mongoose');
 const Transaction = require('../models/Transaction');
-const { AppError } = require('../middleware/errorHandler');
+const { buildDateFilter } = require('../utils/dateRange');
 
 /**
  * GET /api/summary
@@ -11,28 +12,12 @@ const { AppError } = require('../middleware/errorHandler');
  */
 exports.getSummary = async (req, res) => {
   const { from, to } = req.query;
-  const mongoose = require('mongoose');
 
-  // Build date match stage
-  const matchStage = { userId: new mongoose.Types.ObjectId(req.user.id) };
-
-  if (from || to) {
-    matchStage.date = {};
-    if (from) {
-      const fromDate = new Date(from);
-      if (isNaN(fromDate.getTime())) {
-        throw new AppError("Invalid 'from' date format", 400);
-      }
-      matchStage.date.$gte = fromDate;
-    }
-    if (to) {
-      const toDate = new Date(to);
-      if (isNaN(toDate.getTime())) {
-        throw new AppError("Invalid 'to' date format", 400);
-      }
-      matchStage.date.$lte = toDate;
-    }
-  }
+  // Build user-scoped match stage with optional end-of-day-extended date range.
+  const matchStage = {
+    userId: new mongoose.Types.ObjectId(req.user.id),
+    ...buildDateFilter({ from, to }),
+  };
 
   // Run two aggregations in parallel: totals by type, and breakdown by category
   const [typeTotals, categoryBreakdown, recentTransactions] = await Promise.all([

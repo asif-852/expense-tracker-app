@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const dotenv = require('dotenv');
 const connectDB = require('./config/database');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
+const { globalLimiter } = require('./middleware/rateLimit');
 
 // Load environment variables
 dotenv.config();
@@ -19,6 +20,11 @@ if (missingVars.length > 0) {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust the first proxy hop so req.ip / X-Forwarded-For work correctly when
+// the app sits behind a reverse proxy (nginx, Heroku, Render, etc.). Required
+// for accurate per-IP rate limiting in production.
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet());
 
@@ -31,7 +37,14 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-app.use(express.json());
+// JSON body parser with an explicit size cap. 10kb is plenty for any payload
+// this API accepts (auth credentials, transaction records) and rejects oversized
+// bodies cheaply at the parser layer as a basic DoS defense.
+app.use(express.json({ limit: '10kb' }));
+
+// Apply the general limiter to every request. Stricter limits live on the
+// auth router itself.
+app.use(globalLimiter);
 
 // Basic route
 app.get('/', (req, res) => {

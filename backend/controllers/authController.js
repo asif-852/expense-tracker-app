@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const RefreshToken = require('../models/RefreshToken');
@@ -110,30 +111,38 @@ exports.refreshToken = async (req, res) => {
   }
 
   const { refreshToken } = req.body;
-  const storedToken = await RefreshToken.findOne({
-    tokenHash: hashRefreshToken(refreshToken),
-  }).populate('user');
+  const tokenHash = hashRefreshToken(refreshToken);
+  const now = new Date();
 
-  if (!storedToken || !storedToken.user) {
+  // Atomically claim the token: only succeeds if it is unrevoked AND unexpired.
+  // This prevents two concurrent /refresh calls from both treating the same
+  // token as valid and minting two pairs of new tokens.
+  const claimed = await RefreshToken.findOneAndUpdate(
+    { tokenHash, revokedAt: null, expiresAt: { $gt: now } },
+    { revokedAt: now },
+    { new: true }
+  );
+
+  if (claimed) {
+    const tokens = await issueAuthTokens(claimed.user);
+    return res.status(200).json(tokens);
+  }
+
+  // Claim failed — figure out why so we can decide whether this looks like
+  // theft (replaying an already-revoked token) or just an expired/unknown one.
+  const existing = await RefreshToken.findOne({ tokenHash });
+
+  if (!existing) {
     throw new AppError('Invalid refresh token', 401);
   }
 
-  if (!storedToken.isActive()) {
-    if (storedToken.revokedAt) {
-      await revokeAllRefreshTokens(storedToken.user.id);
-    } else {
-      storedToken.revokedAt = new Date();
-      await storedToken.save();
-    }
-
-    throw new AppError('Refresh token is expired or revoked', 401);
+  // Reuse of a previously-revoked token: assume the token has been stolen and
+  // proactively revoke every active session for this user.
+  if (existing.revokedAt) {
+    await revokeAllRefreshTokens(existing.user);
   }
 
-  storedToken.revokedAt = new Date();
-  await storedToken.save();
-
-  const tokens = await issueAuthTokens(storedToken.user.id);
-  return res.status(200).json(tokens);
+  throw new AppError('Refresh token is expired or revoked', 401);
 };
 
 exports.logout = async (req, res) => {
@@ -215,9 +224,46 @@ exports.deleteAccount = async (req, res) => {
     throw new AppError('Incorrect password', 400);
   }
 
-  await RefreshToken.deleteMany({ user: req.user.id });
-  await Transaction.deleteMany({ userId: req.user.id });
-  await User.findByIdAndDelete(req.user.id);
+  const userId = req.user.id;
+  await deleteAccountAtomically(userId);
 
   return res.status(200).json({ message: 'Account deleted successfully' });
 };
+
+/**
+ * Best-effort all-or-nothing account deletion. Uses a Mongo transaction when
+ * the deployment supports it (replica set / mongos), otherwise falls back to
+ * a careful sequential delete that always removes dependents before the user.
+ *
+ * The fallback ordering guarantees that, even on a partial failure, the User
+ * record is the last thing deleted — so a retry can complete the cleanup.
+ */
+async function deleteAccountAtomically(userId) {
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      await RefreshToken.deleteMany({ user: userId }).session(session);
+      await Transaction.deleteMany({ userId }).session(session);
+      await User.findByIdAndDelete(userId).session(session);
+    });
+  } catch (err) {
+    if (isUnsupportedTransactionError(err)) {
+      // Standalone MongoDB: fall back to ordered, non-transactional deletion.
+      await RefreshToken.deleteMany({ user: userId });
+      await Transaction.deleteMany({ userId });
+      await User.findByIdAndDelete(userId);
+    } else {
+      throw err;
+    }
+  } finally {
+    session.endSession();
+  }
+}
+
+function isUnsupportedTransactionError(err) {
+  if (!err) return false;
+  if (err.code === 20 || err.codeName === 'IllegalOperation') return true;
+  return /replica set|Transaction numbers|transactions are not supported/i.test(
+    err.message || ''
+  );
+}

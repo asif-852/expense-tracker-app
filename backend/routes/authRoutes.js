@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const auth = require('../middleware/auth');
+const { authLimiter } = require('../middleware/rateLimit');
 const { body } = require('express-validator');
 
 // @route   POST api/auth/register
@@ -9,6 +10,7 @@ const { body } = require('express-validator');
 // @access  Public
 router.post(
   '/register',
+  authLimiter,
   [
     body('username', 'Username is required')
       .trim()
@@ -37,6 +39,7 @@ router.post(
 // @access  Public
 router.post(
   '/login',
+  authLimiter,
   [
     body('email', 'Please include a valid email').trim().isEmail().normalizeEmail(),
     body('password', 'Password is required').exists(),
@@ -49,6 +52,7 @@ router.post(
 // @access  Public
 router.post(
   '/refresh',
+  authLimiter,
   [
     body('refreshToken', 'Refresh token is required').isString().notEmpty(),
   ],
